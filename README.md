@@ -24,3 +24,5 @@ The first time you run it you'll need to pick the root folder of your albums, an
 - Exclude videos
 - Exclude Drop Box folder
 - Specify Date range for Sync
+
+Software (C) Copyright 2015 Mark Otway
