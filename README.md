@@ -10,3 +10,17 @@ I found it annoying that the Google Picasa application doesn't just sync all my 
 If you've used the Google Drive application on OSX, you'll be familiar with this - it puts an icon in the menu toolbar, and works in the background synchronising your pictures. 
 
 The first time you run it you'll need to pick the root folder of your albums, and log into Picasa (the app uses OAuth, so 2-Factor auth is supported). You can configure the behaviour (uploads only, downloads only, and whether to sync new, changed or all files, and whether to include Auto Backup albums) and then leave it running in the background. 
+
+### Features
+
+- Background Sync of your local photos to Picasaweb
+- OAuth for Picasaweb login, including support for 2-Factor Auth
+- Sync configuration Options:
+- Download New files
+- Download Changed files
+- Upload New files
+- Upload changed files
+- Download and Upload Autobackup folder
+- Exclude videos
+- Exclude Drop Box folder
+- Specify Date range for Sync
