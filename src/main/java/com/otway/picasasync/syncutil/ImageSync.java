@@ -57,8 +57,6 @@ public class ImageSync
     // for upload/download. If not, we'll skip it.
     public boolean newerThan( LocalDateTime threshold ) throws ServiceException
     {
-
-        boolean isNewer = false;
         boolean localFileExists = localFile.exists();
 
         if( localFileExists )
@@ -67,7 +65,7 @@ public class ImageSync
 
             // There's a local file. See if it's newer
             if( localTimeStamp.isAfter(threshold))
-                isNewer = true;
+                return true;
         }
 
         if( remotePhoto != null )
