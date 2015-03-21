@@ -259,9 +259,6 @@ public class SyncManager {
 
         for ( AlbumSync sync : workItems ) {
 
-            if( ! sync.getAlbumName().equals("Cornwall 2008"))
-                continue;
-
             try {
                 sync.process( webClient, oldestDate );
 

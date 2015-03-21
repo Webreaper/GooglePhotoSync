@@ -25,6 +25,11 @@ public class AlbumSync
     private final SyncManager syncManager;
     private final Settings settings;
 
+    @Override
+    public String toString() {
+        return String.format("%s (%d)", localFolder.getName(), localFolder.lastModified() );
+    }
+
     public AlbumSync(AlbumEntry album, File localFolder, SyncManager manager, Settings settings) throws ServiceException {
         this.albumEntry = album;
         this.localFolder = localFolder;
@@ -33,6 +38,7 @@ public class AlbumSync
     }
 
     public Date localChangeDate() {
+
         Date localDate = new Date( localFolder.lastModified() );
 
         if( albumEntry != null )
@@ -44,7 +50,8 @@ public class AlbumSync
                 Date remoteDate = new Date(updateDate.getValue());
 
                 // TODO: More exists calls
-                if (!localFolder.exists() || remoteDate.before(localDate))
+                // If the remote date is more recent, use that, otherwise use the localdate
+                if (!localFolder.exists() || remoteDate.after(localDate))
                     return remoteDate;
             }
         }

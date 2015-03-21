@@ -9,8 +9,8 @@
         <delete dir="out/appBundle" failonerror="false"/>
         <mkdir dir="out/appBundle"/>
         <bundleapp outputdirectory="out/appBundle"
-                   name="Picasync"
-                   displayname="Picasync"
+                   name="Picawebsync"
+                   displayname="Picawebsync"
                    icon="src/main/resources/picasa.icns"
                    identifier="com.otway.picasasync.Main.Main"
                    mainclassname="com.otway.picasasync.Main.Main">
