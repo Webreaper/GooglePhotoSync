@@ -1,0 +1,18 @@
+Manifest-Version: 1.0
+Class-Path: jetty-util-8.1.8.v20121106.jar jackson-core-2.2.2.jar xml-
+ apis-1.3.03.jar jackson-dataformat-yaml-2.2.2.jar log4j-1.2.17.jar ja
+ vax.servlet-3.0.0.v201112011016.jar metadata-extractor-2.6.2.jar core
+ -1.47.1.jar commons-io-1.2.jar httpclient-4.2.1.jar jetty-continuatio
+ n-8.1.8.v20121106.jar jetty-io-8.1.8.v20121106.jar activation-1.1.jar
+  google-http-client-1.18.0-rc.jar jackson-annotations-2.2.2.jar httpc
+ ore-4.2.1.jar sanselan-0.97-incubator.jar junit-4.10.jar jetty-http-8
+ .1.8.v20121106.jar photos-1.47.1.jar google-api-client-1.18.0-rc.jar 
+ xmpcore-5.1.2.jar jetty-server-8.1.8.v20121106.jar mail-1.4.jar xerce
+ sImpl-2.8.1.jar jetty-security-8.1.8.v20121106.jar media-1.47.1.jar g
+ uava-13.0.1.jar commons-cli-1.2.jar json-simple-1.1.1.jar photos-meta
+ -1.47.1.jar jetty-servlet-8.1.8.v20121106.jar hamcrest-core-1.1.jar j
+ sr305-1.3.9.jar google-oauth-client-1.18.0-rc.jar jackson-databind-2.
+ 2.2.jar google-http-client-jackson2-1.18.0-rc.jar commons-logging-1.1
+ .1.jar commons-codec-1.6.jar
+Main-Class: com.otway.picasasync.Main.Main
+

@@ -15,7 +15,7 @@
                    identifier="com.otway.picasasync.Main.Main"
                    mainclassname="com.otway.picasasync.Main.Main">
 
-            <classpath file="out/artifacts/PicasaSyncUtil_jar/*.jar" />
+            <classpath file="classes/artifacts/PicasaWebSync_jar/*.jar" />
             <option value="-Dapple.awt.UIElement=true"/>
         </bundleapp>
     </target>
