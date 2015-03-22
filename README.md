@@ -25,4 +25,9 @@ The first time you run it you'll need to pick the root folder of your albums, an
 - Exclude Drop Box folder
 - Specify Date range for Sync
 
+### Excluding albums from the Sync
+
+If you want to skip certain albums from the sync, put a file called 'exclude.txt' in the root folder to be synced. Any album names matching entries in the file will be skipped.
+
+
 Software (C) Copyright 2015 Mark Otway
