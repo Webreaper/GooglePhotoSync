@@ -59,13 +59,21 @@ public class GoogleOAuth {
     private static final String SUCCESS_CODE = "Success code=";
     private static volatile String token;
     private static final Object lock = new Object();
-    private static final String clientId = "823478442237-brbfocbtc53or6gdv1bthqg3k1lnjiv9.apps.googleusercontent.com";
-    private static final String clientSecret = "rxyBelYUEvjvKX7pXqTfIu8V";
     private static final String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
     private static final String scope = "https://picasaweb.google.com/data/";
     private static final JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     private static final Preferences prefs = Preferences.userNodeForPackage(GoogleOAuth.class);
     private static final Dimension frameSize = new Dimension( 650, 500 );
+    private final String clientSecret;
+    private final String clientId;
+
+    public GoogleOAuth()
+    {
+        // These come from a source file somewhere not checked into VCS.
+        clientSecret = ClientSecretConsts.clientSecret;
+        clientId = ClientSecretConsts.clientId;
+    }
+
 
     public PicasawebClient authenticatePicasa( Settings settings, boolean allowInteractive, SyncState state ) throws IOException, GeneralSecurityException {
         final HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
