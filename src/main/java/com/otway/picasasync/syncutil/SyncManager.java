@@ -50,7 +50,7 @@ import static com.otway.picasasync.utils.TimeUtils.sortSyncNewestFirst;
  */
 public class SyncManager {
 
-    private static final String AUTOBACKUP_NAME = "Auto Backup";
+    private static final String AUTOBACKUP_NAME = "Auto-Backup";
     private static final Logger log = Logger.getLogger(SyncManager.class);
     private final Settings settings;
     private final GoogleOAuth auth = new GoogleOAuth();
@@ -177,15 +177,23 @@ public class SyncManager {
     }
 
     private AlbumSync getAutoBackupWorkItem( File rootFolder ) throws IOException, ServiceException {
+
         List<AlbumEntry> autoBackup = webClient.getAlbums( false );
         AlbumEntry autoBackupEntry = null;
 
         for( AlbumEntry album : autoBackup )
         {
-            if( album.getTitle().getPlainText().equals( AUTOBACKUP_NAME ) )
+            String albumTitle = album.getTitle().getPlainText();
+            String albumName = album.getName();
+            log.info("Checking album: " + albumName );
+
+            if( PicasawebClient.isAlbumOfType(PicasawebClient.AUTO_UPLOAD_TYPE, album))
             {
-                autoBackupEntry = album;
-                break;
+                if( albumName.equals( "Instant Upload" ) )
+                {
+                    autoBackupEntry = album;
+                    break;
+                }
             }
         }
 
@@ -204,6 +212,12 @@ public class SyncManager {
 
         List<AlbumSync> workItems = new ArrayList<AlbumSync>();
 
+        syncState.setStatus("Querying Google for album list");
+        List<AlbumEntry> allRemoteAlbums = webClient.getAlbums( true );
+        log.info(allRemoteAlbums.size() + " albums returned.");
+
+        List<AlbumSync> albums = getRemoteDownloadList(allRemoteAlbums, rootFolder, oldestDate);
+
         // Get the single upload album for AutoBackup uploads
         if( settings.getAutoBackupUpload() )
         {
@@ -211,11 +225,6 @@ public class SyncManager {
             workItems.add(autoBackupUpload);
         }
 
-        syncState.setStatus("Querying Google for album list");
-        List<AlbumEntry> allRemoteAlbums = webClient.getAlbums( true );
-        log.info(allRemoteAlbums.size() + " albums returned.");
-
-        List<AlbumSync> albums = getRemoteDownloadList(allRemoteAlbums, rootFolder, oldestDate);
 
         if( syncState.getIsCancelled() )
             return;

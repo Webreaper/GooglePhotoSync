@@ -63,7 +63,7 @@ import static com.otway.picasasync.utils.TimeUtils.getTimeFromMS;
 public class PicasawebClient {
     Logger log = Logger.getLogger(PicasawebClient.class);
     public static final String AUTO_BACKUP_FOLDER = "Auto Backup";
-    public static final String AUTO_UPLOAD_TYPE = "InstantUploadAuto";
+    public static final String AUTO_UPLOAD_TYPE = "InstantUpload";
     private static final String ALBUM_TYPE_PATTERN = "<gphoto:albumType>%s</gphoto:albumType>";
     private static final String SYNC_CLIENT_NAME = "com.otway.picasasync";
 
