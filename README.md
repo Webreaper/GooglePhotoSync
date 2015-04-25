@@ -29,5 +29,9 @@ The first time you run it you'll need to pick the root folder of your albums, an
 
 If you want to skip certain albums from the sync, put a file called 'exclude.txt' in the root folder to be synced. Any album names matching entries in the file will be skipped.
 
+### Disclaimer
+
+I accept no liability for any data loss or corruption caused by the use of this application. Your use of this app is entirely at your own risk - please ensure that you have adequate backups before you use this software.
+
 
 Software (C) Copyright 2015 Mark Otway
