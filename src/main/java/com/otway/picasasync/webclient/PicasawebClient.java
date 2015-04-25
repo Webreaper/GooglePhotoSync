@@ -17,15 +17,12 @@
 package com.otway.picasasync.webclient;
 
 import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import com.google.api.client.auth.oauth2.Credential;
-import com.google.gdata.client.Query;
 import com.google.gdata.client.photos.PicasawebService;
 import com.google.gdata.data.DateTime;
-import com.google.gdata.data.ILink;
 import com.google.gdata.data.Link;
 import com.google.gdata.data.PlainTextConstruct;
 import com.google.gdata.data.media.MediaFileSource;
@@ -41,7 +38,6 @@ import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -50,8 +46,6 @@ import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
-
-import static com.otway.picasasync.utils.TimeUtils.getTimeFromMS;
 
 /**
  * This is a simple client that provides high-level operations on the Picasa Web
@@ -66,6 +60,7 @@ public class PicasawebClient {
     public static final String AUTO_UPLOAD_TYPE = "InstantUpload";
     private static final String ALBUM_TYPE_PATTERN = "<gphoto:albumType>%s</gphoto:albumType>";
     private static final String SYNC_CLIENT_NAME = "com.otway.picasasync";
+    private static final int CONNECTION_TIMEOUT_SECS = 10;
 
     private static final String API_PREFIX
             = "https://picasaweb.google.com/data/feed/api/user/";
@@ -78,6 +73,8 @@ public class PicasawebClient {
     public PicasawebClient(Credential credential ) {
 
         service.setOAuth2Credentials( credential );
+        service.setConnectTimeout( 1000 * CONNECTION_TIMEOUT_SECS );
+        service.setReadTimeout( 1000 * CONNECTION_TIMEOUT_SECS );
     }
 
     /**
