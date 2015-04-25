@@ -69,13 +69,14 @@ public class Main {
         console.activateOptions();
         Logger.getRootLogger().addAppender(console);
 
-        FileAppender fa = new FileAppender();
+        RunRolledFileAppender fa = new RunRolledFileAppender();
         fa.setName("FileLogger");
-        fa.setFile( new File( System.getProperty("user.home"), "PicaSync.log").toString() );
+        fa.setFile(new File(System.getProperty("user.home"), "PicaSync.log").toString() );
         fa.setLayout(new PatternLayout("%d %-5p [%c{1}] %m%n"));
         fa.setThreshold(Level.INFO);
         fa.setAppend(true);
         fa.activateOptions();
+        fa.setMaxBackupIndex( 1 );
 
         Logger.getRootLogger().addAppender(fa);
     }
