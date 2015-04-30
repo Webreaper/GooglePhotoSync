@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Class-Path: jetty-util-8.1.8.v20121106.jar jackson-core-2.2.2.jar xml-
  apis-1.3.03.jar jackson-dataformat-yaml-2.2.2.jar log4j-1.2.17.jar ja
- vax.servlet-3.0.0.v201112011016.jar metadata-extractor-2.6.2.jar core
+ vax.servlet-3.0.0.v201112011016.jar metadata-extractor-2.8.1.jar core
  -1.47.1.jar commons-io-1.2.jar httpclient-4.2.1.jar jetty-continuatio
  n-8.1.8.v20121106.jar jetty-io-8.1.8.v20121106.jar activation-1.1.jar
   google-http-client-1.18.0-rc.jar jackson-annotations-2.2.2.jar httpc
