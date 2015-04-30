@@ -19,7 +19,6 @@ package com.otway.picasasync.ui;
 import com.google.gdata.data.DateTime;
 import com.otway.picasasync.config.Settings;
 import com.otway.picasasync.syncutil.SyncManager;
-import com.otway.picasasync.webclient.PicasawebClient;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
@@ -97,7 +96,6 @@ public class SyncTrayIcon {
 
         syncMenuItem = new MenuItem("Synchronise Now");
         syncMenuItem.addActionListener(new ActionListener() {
-            @Override
             public void actionPerformed(ActionEvent e) {
 
                 if( manager.getSyncState().getIsInProgress() ){
@@ -136,7 +134,6 @@ public class SyncTrayIcon {
 
         MenuItem logoutMenuItem = new MenuItem("Log out of Picasa");
         logoutMenuItem.addActionListener(new ActionListener() {
-            @Override
             public void actionPerformed(ActionEvent e) {
                 settings.setRefreshToken( null );
                 manager.invalidateWebClient();
@@ -150,7 +147,6 @@ public class SyncTrayIcon {
 
         MenuItem quitMenu = new MenuItem("Exit");
         quitMenu.addActionListener(new ActionListener() {
-            @Override
             public void actionPerformed(ActionEvent e) {
 
                 manager.shutDown();
@@ -213,6 +209,16 @@ public class SyncTrayIcon {
             }
         });
         syncOptionsMenu.add(uploadChangedMenuItem);
+
+        final CheckboxMenuItem deleteTaggedMenuItem = new CheckboxMenuItem( "Remove files tagged 'delete'");
+        deleteTaggedMenuItem.setState(settings.getDeleteTaggedFiles());
+        deleteTaggedMenuItem.addItemListener(new ItemListener() {
+            public void itemStateChanged(ItemEvent e) {
+                log.info("Delete files Toggled");
+                settings.setDeleteTaggedFiles(e.getStateChange() == ItemEvent.SELECTED);
+            }
+        });
+        syncOptionsMenu.add(deleteTaggedMenuItem);
 
         syncOptionsMenu.addSeparator();
 
@@ -292,7 +298,6 @@ public class SyncTrayIcon {
         if (Desktop.isDesktopSupported()) {
             MenuItem openFolderMenuItem = new MenuItem("Open in Finder");
             openFolderMenuItem.addActionListener(new ActionListener() {
-                @Override
                 public void actionPerformed(ActionEvent e) {
                     log.info("Exploring root folder");
                     try {
@@ -310,7 +315,6 @@ public class SyncTrayIcon {
 
         final MenuItem chooseFolderMenu = new MenuItem( "Select Download Folder");
         chooseFolderMenu.addActionListener(new ActionListener() {
-            @Override
             public void actionPerformed(ActionEvent e) {
                 log.info("Choose download folder");
                 settings.setPhotoRootFolder();

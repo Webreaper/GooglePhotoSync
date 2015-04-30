@@ -41,6 +41,7 @@ public class Settings {
     private static final String UPLOAD_CHANGED = "UploadChanged";
     private static final String AUTOBACKUP_DOWNLOAD = "AutoBackupDownload";
     private static final String AUTOBACKUP_UPLOAD = "AutoBackupUpload";
+    private static final String DELETE_TAGGED = "DeleteTaggedFiles";
 
     private File photoRootFolder;
     private String refreshToken;
@@ -58,10 +59,13 @@ public class Settings {
     private Boolean downloadChanged;
     private Boolean uploadNew;
     private Boolean uploadChanged;
+    private Boolean deleteTaggedFiles;
     public boolean getDownloadNew() { return downloadNew; }
+    public boolean getDeleteTaggedFiles() { return deleteTaggedFiles; }
     public boolean getDownloadChanged() { return downloadChanged; }
     public boolean getUploadNew() { return uploadNew; }
     public boolean getUploadChanged() { return uploadChanged; }
+    public void setDeleteTaggedFiles(boolean delete) {this.deleteTaggedFiles = delete; saveSettings();}
     public void setDownloadNew(boolean downloadNew) {this.downloadNew = downloadNew; saveSettings();}
     public void setDownloadChanged(boolean downloadChanged) {this.downloadChanged = downloadChanged; saveSettings();}
     public void setUploadNew(boolean uploadNew) {this.uploadNew = uploadNew; saveSettings();}
@@ -105,7 +109,8 @@ public class Settings {
         uploadNew = Boolean.parseBoolean(preferences.get( UPLOAD_NEW, "true"));
         uploadChanged = Boolean.parseBoolean(preferences.get( UPLOAD_CHANGED, "true"));
         autoBackupDownload = Boolean.parseBoolean(preferences.get( AUTOBACKUP_DOWNLOAD, "true"));
-        autoBackupUpload = Boolean.parseBoolean(preferences.get( AUTOBACKUP_UPLOAD, "true"));
+        autoBackupUpload = Boolean.parseBoolean(preferences.get( AUTOBACKUP_UPLOAD, "false"));
+        deleteTaggedFiles = Boolean.parseBoolean(preferences.get( DELETE_TAGGED, "false"));
 
         log.info( "Settings loaded successfully.");
         return result;
@@ -141,6 +146,7 @@ public class Settings {
         preferences.put( UPLOAD_NEW, uploadNew.toString());
         preferences.put( AUTOBACKUP_DOWNLOAD, autoBackupDownload.toString() );
         preferences.put( AUTOBACKUP_UPLOAD, autoBackupUpload.toString() );
+        preferences.put( DELETE_TAGGED, deleteTaggedFiles.toString() );
 
         if( getRefreshToken() != null )
             preferences.put( REFRESH_TOKEN, getRefreshToken() );

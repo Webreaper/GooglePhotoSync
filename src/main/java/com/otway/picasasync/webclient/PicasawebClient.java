@@ -32,6 +32,7 @@ import com.google.gdata.util.AuthenticationException;
 import com.google.gdata.util.ParseException;
 import com.google.gdata.util.ServiceException;
 import com.google.gdata.util.XmlBlob;
+import com.otway.picasasync.metadata.ImageInformation;
 import com.otway.picasasync.utils.TimeUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.log4j.Logger;
@@ -47,6 +48,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.*;
 
+import static com.otway.picasasync.metadata.ImageInformation.readImageInformation;
+import static com.otway.picasasync.metadata.ImageInformation.safeReadImageInformation;
+
 /**
  * This is a simple client that provides high-level operations on the Picasa Web
  * Albums GData API. It can also be used as a command-line application to test
@@ -57,7 +61,8 @@ import java.util.*;
 public class PicasawebClient {
     Logger log = Logger.getLogger(PicasawebClient.class);
     public static final String AUTO_BACKUP_FOLDER = "Auto Backup";
-    public static final String AUTO_UPLOAD_TYPE = "InstantUpload";
+    public static final String AUTO_UPLOAD_TYPE = "InstantUploadAuto";
+    public static final String INSTANT_UPLOAD = "InstantUpload";
     private static final String ALBUM_TYPE_PATTERN = "<gphoto:albumType>%s</gphoto:albumType>";
     private static final String SYNC_CLIENT_NAME = "com.otway.picasasync";
     private static final int CONNECTION_TIMEOUT_SECS = 10;
@@ -74,7 +79,7 @@ public class PicasawebClient {
 
         service.setOAuth2Credentials( credential );
         service.setConnectTimeout( 1000 * CONNECTION_TIMEOUT_SECS );
-        service.setReadTimeout( 1000 * CONNECTION_TIMEOUT_SECS );
+        service.setReadTimeout(1000 * CONNECTION_TIMEOUT_SECS);
     }
 
     /**
@@ -180,8 +185,8 @@ public class PicasawebClient {
         // See if the AlbumEntry was valid remotely (i.e., it has an ID). If not, create it
         if ( albumEntry.getId() == null )
         {
-            albumEntry.setDescription(new PlainTextConstruct("Automatically created by Picasync"));
-            albumEntry = insertAlbum(albumEntry);
+                albumEntry.setDescription(new PlainTextConstruct("Automatically created by Picasync"));
+                albumEntry = insertAlbum(albumEntry);
 
             if( albumEntry.getId() == null || albumEntry.getId().isEmpty()) {
                 log.error("Unable to create new album: " + albumEntry.getTitle().getPlainText() );
@@ -222,7 +227,13 @@ public class PicasawebClient {
             log.warn("Unable to set date/time stamp for file: " + localFile );
     }
 
-    public static boolean isAlbumOfType( String type, AlbumEntry album ){
+    public static boolean isInstantUpload( AlbumEntry album )
+    {
+        return isAlbumOfType( AUTO_UPLOAD_TYPE, album ) ||
+                isAlbumOfType( INSTANT_UPLOAD, album );
+    }
+
+    private static boolean isAlbumOfType( String type, AlbumEntry album ){
         String albumType = String.format( ALBUM_TYPE_PATTERN, type);
 
         XmlBlob blob = album.getXmlBlob();
@@ -293,39 +304,16 @@ public class PicasawebClient {
         {
             for (File file : files)
             {
-                Date imageDate = null;
-                Metadata metadata = null;
-                try
-                {
-                    metadata = ImageMetadataReader.readMetadata(file);
+                ImageInformation info = safeReadImageInformation(file);
 
-                    // Read Exif Data
-                    Directory directory = metadata.getDirectory(ExifIFD0Directory.class);
-                    if (directory != null)
+                if( info != null )
+                {
+                    Date imageDate = info.getDateTaken();
+                    if (imageDate != null)
                     {
-                        // Read the date
-                        imageDate = directory.getDate(ExifIFD0Directory.TAG_DATETIME);
+                        if (newestDate == null || imageDate.after(newestDate))
+                            newestDate = imageDate;
                     }
-
-                } catch (Exception e)
-                {
-                    log.warn("Unable to read EXIF datetime from " + file);
-
-                    try
-                    {
-                        Path path = Paths.get( file.toString() );
-                        BasicFileAttributes attr = Files.readAttributes(path, BasicFileAttributes.class);
-                        imageDate = new Date( attr.creationTime().toMillis() );
-                    }
-                    catch( Exception ex ){
-                        log.warn("Unable to read creation datetime from " + file);
-                    }
-                }
-
-                if( imageDate != null )
-                {
-                    if (newestDate == null || imageDate.after(newestDate))
-                        newestDate = imageDate;
                 }
             }
 
@@ -397,7 +385,11 @@ public class PicasawebClient {
 
     public void movePhoto(PhotoEntry photo, AlbumEntry destinationAlbum) throws ServiceException, IOException
     {
-        photo.setAlbumId( destinationAlbum.getId() );
+        log.info("Moving photo " + photo.getTitle().getPlainText() + " to " + destinationAlbum.getTitle().getPlainText() );
+
+        AlbumFeed feed = destinationAlbum.getFeed();
+        String id = feed.getGphotoId();
+        photo.setAlbumId(id );
         photo.update();
     }
 
@@ -651,7 +643,7 @@ public class PicasawebClient {
     public static File getFolderNameForAlbum( File rootFolder, AlbumEntry album ){
         String title = album.getTitle().getPlainText();
 
-        if( isAlbumOfType( AUTO_UPLOAD_TYPE, album )) {
+        if( isInstantUpload( album )) {
             // For auto backup downloads, we use the pre-defined "Auto Backup" sub-folder name and
             // force download only (uploads for auto-backup will be done separately.
             File autoBackupFolder = new File(rootFolder, AUTO_BACKUP_FOLDER);

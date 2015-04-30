@@ -18,9 +18,12 @@ package com.otway.picasasync.syncutil;
 
 import com.google.gdata.data.PlainTextConstruct;
 import com.google.gdata.data.photos.AlbumEntry;
+import com.google.gdata.data.photos.PhotoEntry;
 import com.google.gdata.util.ServiceException;
 import com.google.gdata.util.ServiceForbiddenException;
 import com.otway.picasasync.config.Settings;
+import com.otway.picasasync.metadata.UniquePhoto;
+import com.otway.picasasync.utils.FileUtilities;
 import com.otway.picasasync.utils.TimeUtils;
 import com.otway.picasasync.webclient.GoogleOAuth;
 import com.otway.picasasync.webclient.PicasawebClient;
@@ -34,8 +37,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
+import java.nio.file.attribute.FileTime;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
@@ -59,6 +61,8 @@ public class SyncManager {
     private final Object lock = new Object();
     private volatile boolean quit = false;
     private PicasawebClient webClient ;
+    private AlbumEntry recycleAlbum;
+    private final HashSet<String> deletedPhotos = new HashSet<String>();
 
     public void updateProgress( String msg ){ syncState.setStatus(msg); }
     public SyncState getSyncState() { return syncState; }
@@ -72,19 +76,17 @@ public class SyncManager {
 
     public void StartLoop() {
 
-        log.info( "Initialising background sync loop.");
+        log.info("Initialising background sync loop.");
         final int SYNC_FREQUENCY_MINS = 5;
 
         Runnable r = new Runnable() {
-            @Override
             public void run() {
 
                 while (! quit ) {
 
                     try {
-//                        syncState.setStatus( "Waiting for next sync.");
-
                         synchronized ( lock ){
+
                             lock.wait( SYNC_FREQUENCY_MINS * 1000 * 60 );
                         }
 
@@ -98,7 +100,7 @@ public class SyncManager {
             }
         };
 
-        executor.submit( r );
+        executor.submit(r);
     }
 
     public void startSync() {
@@ -178,7 +180,7 @@ public class SyncManager {
 
     private AlbumSync getAutoBackupWorkItem( File rootFolder ) throws IOException, ServiceException {
 
-        List<AlbumEntry> autoBackup = webClient.getAlbums( false );
+        List<AlbumEntry> autoBackup = webClient.getAlbums(false);
         AlbumEntry autoBackupEntry = null;
 
         for( AlbumEntry album : autoBackup )
@@ -187,7 +189,7 @@ public class SyncManager {
             String albumName = album.getName();
             log.info("Checking album: " + albumName );
 
-            if( PicasawebClient.isAlbumOfType(PicasawebClient.AUTO_UPLOAD_TYPE, album))
+            if( PicasawebClient.isInstantUpload(album))
             {
                 if( albumName.equals( "Instant Upload" ) )
                 {
@@ -209,12 +211,13 @@ public class SyncManager {
             return;
 
         List<String> exclusions = readExcludedAlbumsList( rootFolder);
-
         List<AlbumSync> workItems = new ArrayList<AlbumSync>();
 
         syncState.setStatus("Querying Google for album list");
-        List<AlbumEntry> allRemoteAlbums = webClient.getAlbums( true );
+        List<AlbumEntry> allRemoteAlbums = webClient.getAlbums(true);
         log.info(allRemoteAlbums.size() + " albums returned.");
+
+        prepareRecycleAlbum( allRemoteAlbums );
 
         List<AlbumSync> albums = getRemoteDownloadList(allRemoteAlbums, rootFolder, oldestDate);
 
@@ -258,13 +261,12 @@ public class SyncManager {
             }
         }
 
-        // Now the remote albums that already exist
         for (AlbumSync album : albums)
         {
-            if( settings.getExcludeDropBox() && album.getAlbumName().equals("Drop Box"))
+            if (settings.getExcludeDropBox() && album.getAlbumName().equals("Drop Box"))
                 continue;
 
-            if( exclusions.contains( album.getAlbumName() ))
+            if (exclusions.contains(album.getAlbumName()))
                 continue;
 
             workItems.add(album);
@@ -284,8 +286,11 @@ public class SyncManager {
 
         for ( AlbumSync sync : workItems ) {
 
+            //if( ! sync.getAlbumName().equals( "TestAlbum" ) )
+            //    continue;
+
             try {
-                sync.process( webClient, oldestDate );
+                sync.process( webClient, oldestDate, recycleAlbum );
 
                 failedAlbums = 0;
             }
@@ -317,6 +322,74 @@ public class SyncManager {
         }
     }
 
+    private void prepareRecycleAlbum(List<AlbumEntry> allRemoteAlbums) throws IOException, ServiceException
+    {
+        for( AlbumEntry album : allRemoteAlbums )
+        {
+            if( album.getTitle().getPlainText().equals("Recycle Bin") )
+            {
+                recycleAlbum = album;
+                allRemoteAlbums.remove( album );
+                break;
+            }
+        }
+
+        if( recycleAlbum == null )
+        {
+            recycleAlbum = new AlbumEntry();
+            recycleAlbum.setTitle(new PlainTextConstruct("Recycle Bin"));
+            recycleAlbum.setDescription(new PlainTextConstruct("Picasync Photos ready for deletion."));
+        }
+        else
+        {
+            // Get all of the unique IDs of the photos in the Recycle Bin
+            // so we can skip any we see if another client tries to upload
+            // from another PC.
+            List<PhotoEntry> photos = webClient.getPhotos( recycleAlbum );
+
+            for( PhotoEntry photo : photos )
+            {
+                // Enough date to uniquely identify a photo
+                deletedPhotos.add( new UniquePhoto( photo ).getUniqueIdentifier() );
+            }
+
+        }
+    }
+
+    /*
+        Carefully recycle any photos which have been tagged with 'delete'. We
+        move the online versions to a 'Recycle Bin' album, so the user can
+        manually delete once they've confirmed nothing important will be lost,
+        and we move the local images to the recycle bin/trash for the same
+        reason. That way, we don't actually delete anything.
+     */
+    public void recyclePhoto( ImageSync image ) throws IOException, ServiceException
+    {
+        // Check that the album exists, create it and save if it doesn't.
+        recycleAlbum = webClient.prepareRemoteAlbum( recycleAlbum );
+
+        if( recycleAlbum != null )
+        {
+            PhotoEntry photo = image.getRemotePhoto();
+
+            try
+            {
+                if (photo != null)
+                {
+                    webClient.movePhoto(photo, recycleAlbum);
+                    deletedPhotos.add( new UniquePhoto(photo).getUniqueIdentifier() );
+                }
+
+                log.info("Moving image " + image.getLocalFile() + " to trash");
+                FileUtilities.moveToTrash(image.getLocalFile());
+            }
+            catch( Exception ex )
+            {
+                log.error("Unable to recycle photo.", ex );
+            }
+        }
+    }
+
     private List<String> readExcludedAlbumsList( File rootFolder)
     {
         final String exclusionsFile = "exclude.txt";
@@ -330,7 +403,7 @@ public class SyncManager {
                 List<String> exclusions = FileUtils.readLines(excludeList, "UTF-8");
                 exclusions.remove(AUTOBACKUP_NAME);
 
-                log.info(exclusions.size() + " albums were excluded via " + exclusionsFile );
+                log.info(exclusions.size() + " albums were excluded via " + exclusionsFile);
                 return exclusions;
             }
             catch (IOException ex)
@@ -381,17 +454,24 @@ public class SyncManager {
         HashSet<String> uniqueNames = new HashSet<String>();
         List<AlbumSync> result = new ArrayList<AlbumSync>();
 
+        // If this is false, we only care about instant upload albums.
+        boolean nonInstantUploadAlbums = settings.getDownloadChanged() ||
+                settings.getUploadChanged() ||
+                settings.getDownloadNew() ||
+                settings.getUploadNew();
+
         for (AlbumEntry album : remoteAlbums) {
 
             String title = album.getTitle().getPlainText();
-            boolean isInstantUploadType = PicasawebClient.isAlbumOfType(PicasawebClient.AUTO_UPLOAD_TYPE, album);
+            boolean isInstantUploadType = PicasawebClient.isInstantUpload(album);
 
             if( oldestDate.isAfter( getTimeFromMS( album.getUpdated().getValue() ) ) ) {
                 log.debug("Album update date (" + album.getUpdated() + ") too old. Skipping " + title);
                 continue;
             }
 
-            if( ! settings.getAutoBackupDownload() && isInstantUploadType ) {
+            if (!settings.getAutoBackupDownload() && isInstantUploadType)
+            {
                 log.info("Skipping Auto-Backup album: " + title);
                 continue;
             }
@@ -420,6 +500,9 @@ public class SyncManager {
                 // If it's not AutoBackup, add the suffix to differentiate duplicate titles
                 albumFolder = new File( albumFolder.getParent(), albumFolder.getName() + suffix );
             }
+
+            if( ! isInstantUploadType && ! nonInstantUploadAlbums )
+                continue;
 
             result.add(new AlbumSync(album, albumFolder, this, settings ));
         }
@@ -452,14 +535,13 @@ public class SyncManager {
 
         File[] newFolders = rootFolder.listFiles(new FilenameFilter()
         {
-            @Override
             public boolean accept(File current, String name)
             {
                 File file = new File(current, name);
-                if( file.isDirectory() && ! file.isHidden() )
+                if (file.isDirectory() && !file.isHidden())
                 {
-                    if( ! albumNameLookup.contains( file.getName() ) &&
-                          ! file.getName().equals( PicasawebClient.AUTO_BACKUP_FOLDER  ) )
+                    if (!albumNameLookup.contains(file.getName()) &&
+                            !file.getName().equals(PicasawebClient.AUTO_BACKUP_FOLDER))
                     {
                         return true;
                     }
@@ -472,10 +554,17 @@ public class SyncManager {
         {
             result = Arrays.asList( newFolders );
 
-            TimeUtils.sortFoldersNewestFirst( result );
+            TimeUtils.sortFoldersNewestFirst(result);
         }
 
         return result;
     }
 
+    public boolean isDeleted(UniquePhoto up)
+    {
+        if( deletedPhotos.contains( up.getUniqueIdentifier() ))
+            return true;
+
+        return false;
+    }
 }

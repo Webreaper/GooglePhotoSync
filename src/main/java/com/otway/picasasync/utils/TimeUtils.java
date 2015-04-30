@@ -41,7 +41,6 @@ public class TimeUtils {
     {
         Collections.sort(photos, new Comparator<PhotoEntry>()
         {
-            @Override
             public int compare(PhotoEntry x, PhotoEntry y)
             {
                 return y.getUpdated().compareTo(x.getUpdated());
@@ -52,7 +51,6 @@ public class TimeUtils {
     public static void sortAlbumEntriesNewestFirst( List<AlbumEntry> albums )
     {
         Collections.sort(albums, new Comparator<AlbumEntry>() {
-            @Override
             public int compare(AlbumEntry x, AlbumEntry y) {
                 return y.getUpdated().compareTo(x.getUpdated());
             }
@@ -63,7 +61,6 @@ public class TimeUtils {
     {
         Collections.sort(files, new Comparator<File>()
         {
-            @Override
             public int compare(File x, File y)
             {
                 return Long.compare(y.lastModified(), (x.lastModified()));
@@ -75,7 +72,6 @@ public class TimeUtils {
     {
         Collections.sort(sync, new Comparator<AlbumSync>()
         {
-            @Override
             public int compare(AlbumSync x, AlbumSync y)
             {
                 return y.localChangeDate().compareTo( x.localChangeDate() );

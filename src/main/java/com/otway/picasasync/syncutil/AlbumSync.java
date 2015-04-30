@@ -17,10 +17,13 @@
 package com.otway.picasasync.syncutil;
 
 import com.google.gdata.data.DateTime;
+import com.google.gdata.data.media.mediarss.MediaKeywords;
 import com.google.gdata.data.photos.AlbumEntry;
 import com.google.gdata.data.photos.PhotoEntry;
 import com.google.gdata.util.ServiceException;
 import com.otway.picasasync.config.Settings;
+import com.otway.picasasync.metadata.ImageInformation;
+import com.otway.picasasync.metadata.UniquePhoto;
 import com.otway.picasasync.webclient.PicasawebClient;
 import org.apache.log4j.Logger;
 
@@ -86,13 +89,13 @@ public class AlbumSync
         }
     }
 
-    public void process( PicasawebClient webClient, LocalDateTime oldestDate )
+    public void process( PicasawebClient webClient, LocalDateTime oldestDate, AlbumEntry recycleAlbum )
                             throws IOException, ServiceException
     {
         log.info( "Beginning sync for album: " + getAlbumName() + " (Name: " + albumEntry.getName() + ")" );
         syncManager.updateProgress(String.format("Synchronising %s...", getAlbumName()));
 
-        boolean isAutoBackup = PicasawebClient.isAlbumOfType(PicasawebClient.AUTO_UPLOAD_TYPE, albumEntry);
+        boolean isAutoBackup = PicasawebClient.isInstantUpload(albumEntry);
 
         // Calculate what images we need to upload - i.e., the diff
         // (including size and date) of the local images vs online
@@ -100,9 +103,16 @@ public class AlbumSync
 
         List<ImageSync> downloads = new ArrayList<ImageSync>();
         List<ImageSync> uploads = new ArrayList<ImageSync>();
+        List<ImageSync> deletes = new ArrayList<ImageSync>();
 
         for( ImageSync image : images )
         {
+            if( isDeletion(image) )
+            {
+                deletes.add( image );
+                continue;
+            }
+
             switch( image.evaluateAction( settings, isAutoBackup ) )
             {
                 case upload:
@@ -156,6 +166,63 @@ public class AlbumSync
             if (syncManager.getSyncState().getIsCancelled())
                 break;
         }
+
+        // Now clean up any images that have been marked for deletion.
+        for (ImageSync image : deletes)
+        {
+            syncManager.recyclePhoto( image );
+        }
+    }
+
+    private boolean isDeletion(ImageSync image)
+    {
+        if( image.getRemotePhoto() != null )
+        {
+            MediaKeywords keywords = image.getRemotePhoto().getMediaKeywords();
+
+            List<String> tags = keywords.getKeywords();
+
+            for (String tag : tags)
+            {
+                if (tag.equals("delete"))
+                    return true;
+            }
+
+            PhotoEntry photo = image.getRemotePhoto();
+
+            if( photo != null )
+            {
+                UniquePhoto up = new UniquePhoto( photo );
+
+                // See if this image is in the 'Recycle Bin' album
+                if (syncManager.isDeleted( up ))
+                    return true;
+            }
+        }
+
+        // No remote photo. See if the local folder has a 'deleted' tag
+        ImageInformation localInfo = ImageInformation.safeReadImageInformation( image.getLocalFile() );
+
+        if( localInfo != null && localInfo.getDeleteTag() )
+            return true;
+
+        // It's possible the photo may be sitting in the recycle bin in the
+        // cloud because it's already been deleted. So we'll have a look and
+        // see if we can identify it as having already been deleted.
+
+        try
+        {
+            UniquePhoto up = new UniquePhoto(image.getLocalFile());
+            if (syncManager.isDeleted(up))
+                return true;
+
+        }
+        catch( Exception ex )
+        {
+            // Don't care
+        }
+
+        return false;
     }
 
     private boolean checkDiskSpace()
@@ -228,7 +295,10 @@ public class AlbumSync
             dupesDiscarded += list.size() - 1;
         }
 
-        log.info("Ignoring " + dupesDiscarded + " duplicate photos of " + photos.size() + " from album " + getAlbumName() );
+        if( dupesDiscarded > 0 )
+        {
+            log.info("Ignoring " + dupesDiscarded + " duplicate photos of " + photos.size() + " from album " + getAlbumName() );
+        }
 
         List<ImageSync> remoteImages = new ArrayList<ImageSync>();
 
@@ -251,7 +321,6 @@ public class AlbumSync
         // Get the local file list
         File[] files = localFolder.listFiles(
             new FilenameFilter() {
-                @Override
                 public boolean accept(File current, String name) {
                     File file = new File(current, name);
                     return file.isFile() && !file.isHidden();
@@ -261,7 +330,7 @@ public class AlbumSync
 
         List<ImageSync> localFiles = new ArrayList<ImageSync>();
 
-        if( files != null )
+        if( files != null && files.length > 0 )
         {
             log.info(files.length + " local files found in " + localFolder);
 
@@ -302,7 +371,6 @@ public class AlbumSync
 
         File[] files = localFolder.listFiles(
                 new FilenameFilter() {
-                    @Override
                     public boolean accept(File current, String name) {
                         File file = new File(current, name);
                         return file.isFile() && !file.isHidden();

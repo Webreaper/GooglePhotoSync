@@ -197,7 +197,6 @@ public class GoogleOAuth {
 
         try {
             Platform.runLater(new Runnable() {
-                @Override
                 public void run() {
                     log.info( "Initialising login frame on background thread.");
                     synchronized ( lock ){
@@ -241,7 +240,7 @@ public class GoogleOAuth {
 
         webEngine.getLoadWorker().stateProperty().addListener(
                 new ChangeListener<State>() {
-                    @Override public void changed(ObservableValue ov, State oldState, State newState) {
+                    public void changed(ObservableValue ov, State oldState, State newState) {
 
                         HandleWebTitleChange( webEngine, frame, newState, state );
                     }
