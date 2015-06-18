@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Date;
+import java.util.List;
 
 // Inner class containing image information
 public class ImageInformation {
@@ -128,10 +129,8 @@ public class ImageInformation {
 
         if( ipTCdirectory != null && ipTCdirectory.getKeywords() != null )
         {
-            if( ipTCdirectory.getKeywords().contains("delete") )
-            {
+            if( containsCaseInsensitive( ipTCdirectory.getKeywords(), "delete") )
                 hasDeleteTag = true;
-            }
         }
 
         int width = jpegDirectory.getImageWidth();
@@ -140,6 +139,14 @@ public class ImageInformation {
         return new ImageInformation(orientation, width, height, hasDeleteTag, uniqueID, dateTaken );
     }
 
+    public static boolean containsCaseInsensitive(List<String> l, String s){
+        for (String string : l){
+            if (string.equalsIgnoreCase(s)){
+                return true;
+            }
+        }
+        return false;
+    }
     private static Date getCreationTime( File imageFile )
     {
         try
