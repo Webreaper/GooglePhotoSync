@@ -28,26 +28,39 @@ import javax.swing.*;
 public class Main {
 
     private static final Logger log = Logger.getLogger(Main.class);
+    private static String headlessSettings = null;
 
+    public static boolean isHeadless() { return headlessSettings != null; }
     public Main() {
         initLogging();
 
-        setSystemLookAndFeel();
+        boolean guiEnabled = ! isHeadless();
+
+        if( guiEnabled )
+            setSystemLookAndFeel();
 
         try {
             Settings settings = new Settings();
+
+            if( isHeadless() )
+                settings.importSettings( headlessSettings );
 
             if( settings.loadSettings() ) {
 
                 SyncManager manager = new SyncManager(settings);
 
-                SyncTrayIcon trayIcon = new SyncTrayIcon();
-                trayIcon.Initialise(settings, manager);
+                if( guiEnabled )
+                {
+                    SyncTrayIcon trayIcon = new SyncTrayIcon();
+                    trayIcon.Initialise(settings, manager);
+                    log.info("Application started successfully.");
+                }
+                else
+                    log.info("Starting headless sync process...");
 
-                log.info("Application started successfully.");
-
-                // Allow interactive login the first time
-                if( manager.initWebClient(true) ) {
+                // Allow interactive login the first time - if we're not headless
+                if( manager.initWebClient( guiEnabled ) )
+                {
                     manager.StartLoop();
                 }
             }
@@ -99,6 +112,20 @@ public class Main {
 
 
     public static void main(String[] args) {
+        processCmdLineArgs( args );
+
         new Main();
+    }
+
+    private static void processCmdLineArgs(String[] args)
+    {
+        final String settingsArg = "-settings=";
+        for( String arg : args )
+        {
+            if( arg.startsWith( settingsArg ))
+            {
+                headlessSettings = arg.substring( settingsArg.length() );
+            }
+        }
     }
 }

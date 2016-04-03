@@ -281,7 +281,15 @@ public class SyncManager {
         int failedAlbums = 0;
 
         for( AlbumSync syncLog : workItems )
-            log.info(" " + syncLog.getAlbumName() + " (changed locally on " + syncLog.localChangeDate() + ")" );
+        {
+            if( ! syncLog.getHasAlbum() )
+            {
+                log.warn("Album had no albumEntry - logic error!");
+                continue;
+            }
+
+            log.info(" " + syncLog.getAlbumName() + " (changed locally on " + syncLog.localChangeDate() + ")");
+        }
         log.info("================================================================");
 
         for ( AlbumSync sync : workItems ) {
@@ -326,7 +334,7 @@ public class SyncManager {
     {
         for( AlbumEntry album : allRemoteAlbums )
         {
-            if( album.getTitle().getPlainText().equals("Recycle Bin") )
+            if( album.getTitle().getPlainText().startsWith("Recycle Bin") )
             {
                 recycleAlbum = album;
                 allRemoteAlbums.remove( album );
@@ -374,14 +382,22 @@ public class SyncManager {
 
             try
             {
+                log.info("Moving image " + image.getLocalFile() + " to trash...");
+                FileUtilities.moveToTrash(image.getLocalFile());
+
                 if (photo != null)
                 {
+                    log.info("Moving image " + image.getLocalFile() + " to Recycle Bin album...");
+
+                    if( recycleAlbum.getPhotosLeft() == 0 )
+                    {
+                        recycleAlbum.setName("Recycle Bin");
+                        recycleAlbum.update();
+                    }
+
                     webClient.movePhoto(photo, recycleAlbum);
                     deletedPhotos.add( new UniquePhoto(photo).getUniqueIdentifier() );
                 }
-
-                log.info("Moving image " + image.getLocalFile() + " to trash");
-                FileUtilities.moveToTrash(image.getLocalFile());
             }
             catch( Exception ex )
             {

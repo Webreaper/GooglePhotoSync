@@ -34,6 +34,7 @@ public class SyncState {
     private SyncTrayIcon trayIcon;
     private int totalDownloaded;
     private int totalUploaded;
+    private int totalFailed;
 
     public void setTrayIcon( SyncTrayIcon trayIcon ){
         this.trayIcon = trayIcon;
@@ -45,11 +46,12 @@ public class SyncState {
         }
     }
 
-    public void addStats( int downloaded, int uploaded )
+    public void addStats( int downloaded, int uploaded, int failed )
     {
         synchronized( lock ){
             totalDownloaded += downloaded;
             totalUploaded += uploaded;
+            totalFailed += failed;
         }
     }
     public boolean getIsCancelled() {
@@ -70,6 +72,7 @@ public class SyncState {
         synchronized (lock ){
             totalDownloaded = 0;
             totalUploaded = 0;
+            totalFailed = 0;
             cancelled = false;
             syncInProgress = true;
         }
@@ -97,7 +100,7 @@ public class SyncState {
             synchronized (lock) {
                 msg = this.lastStatus;
                 inProgress = this.syncInProgress;
-                stats = String.format( "%d downloaded, %d uploaded", this.totalDownloaded, this.totalUploaded);
+                stats = String.format( "%d downloaded, %d uploaded, %d failed", this.totalDownloaded, this.totalUploaded, this.totalFailed);
             }
 
             SwingUtilities.invokeLater(new Runnable() {

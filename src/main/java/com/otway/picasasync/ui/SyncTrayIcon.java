@@ -24,6 +24,7 @@ import org.apache.log4j.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class SyncTrayIcon {
     private MenuItem syncMenuItem;
     private MenuItem statisticsMenuItem;
     private MenuItem statusMenuItem;
+    private MenuItem exportSettingsMenuItem;
     private Settings settings;
     private ArrayList<CheckboxMenuItem> ranges = new ArrayList<CheckboxMenuItem>();
 
@@ -128,7 +130,20 @@ public class SyncTrayIcon {
 
         statisticsMenuItem = new MenuItem( "No sync started." );
         statisticsMenuItem.setEnabled( false );
-        trayPopupMenu.add( statisticsMenuItem );
+        trayPopupMenu.add(statisticsMenuItem);
+
+        trayPopupMenu.addSeparator();
+
+        exportSettingsMenuItem = new MenuItem( "Export Settings");
+        exportSettingsMenuItem.setEnabled( true );
+        exportSettingsMenuItem.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
+                exportSettings();
+            }
+        });
+        trayPopupMenu.add( exportSettingsMenuItem );
 
         trayPopupMenu.addSeparator();
 
@@ -159,6 +174,18 @@ public class SyncTrayIcon {
         trayIcon.setPopupMenu(trayPopupMenu);
 
         log.info("Tray popup menu initialised.");
+    }
+
+    private void exportSettings()
+    {
+        try
+        {
+            settings.exportSettings();
+        }
+        catch( IOException e )
+        {
+            log.error( "Unable to save preferences: ", e );
+        }
     }
 
     private Menu createDownloadOptionsMenu(PopupMenu parentMenu) {
@@ -314,8 +341,10 @@ public class SyncTrayIcon {
         }
 
         final MenuItem chooseFolderMenu = new MenuItem( "Select Download Folder");
-        chooseFolderMenu.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
+        chooseFolderMenu.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent e)
+            {
                 log.info("Choose download folder");
                 settings.setPhotoRootFolder();
             }

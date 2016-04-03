@@ -24,6 +24,8 @@ import com.google.gdata.util.ServiceException;
 import com.otway.picasasync.config.Settings;
 import com.otway.picasasync.metadata.ImageInformation;
 import com.otway.picasasync.metadata.UniquePhoto;
+import com.otway.picasasync.picasaini.PicasaIniParser;
+import com.otway.picasasync.utils.FileUtilities;
 import com.otway.picasasync.webclient.PicasawebClient;
 import org.apache.log4j.Logger;
 
@@ -56,9 +58,10 @@ public class AlbumSync
         this.settings = settings;
     }
 
+
     public Date localChangeDate() {
 
-        Date localDate = new Date( localFolder.lastModified() );
+        Date localDate = FileUtilities.getLatestDatefromDir( localFolder );
 
         if( albumEntry != null )
         {
@@ -76,6 +79,8 @@ public class AlbumSync
         }
         return localDate;
     }
+
+    public boolean getHasAlbum() { return albumEntry != null; }
 
     public String getAlbumName() throws ServiceException
     {
@@ -96,6 +101,8 @@ public class AlbumSync
         syncManager.updateProgress(String.format("Synchronising %s...", getAlbumName()));
 
         boolean isAutoBackup = PicasawebClient.isInstantUpload(albumEntry);
+
+        // PicasaIniParser parser = PicasaIniParser.getPicasaIni( localFolder );
 
         // Calculate what images we need to upload - i.e., the diff
         // (including size and date) of the local images vs online
@@ -134,9 +141,13 @@ public class AlbumSync
 
             syncManager.updateProgress(String.format("Uploading %s : %s...", getAlbumName(), image.getName()));
 
-            webClient.uploadImageToAlbum(image.getLocalFile(), image.getRemotePhoto(), albumEntry, image.getLocalMd5CheckSum() );
+            if( webClient.uploadImageToAlbum(image.getLocalFile(), image.getRemotePhoto(), albumEntry, image.getLocalMd5CheckSum() ) )
+            {
+                syncManager.getSyncState().addStats(0, 1, 0);
+            }
+            else
+                syncManager.getSyncState().addStats(0, 0, 1);
 
-            syncManager.getSyncState().addStats(0, 1);
 
             if (syncManager.getSyncState().getIsCancelled())
                 break;
@@ -158,13 +169,20 @@ public class AlbumSync
 
             syncManager.updateProgress(String.format("Downloading %s : %s...", getAlbumName(), image.getName()));
 
-            // And finally, download any new images - if the remote version is newer
-            downloadImage(image, webClient);
-
-            syncManager.getSyncState().addStats(1, 0);
-
             if (syncManager.getSyncState().getIsCancelled())
                 break;
+
+            // And finally, download any new images - if the remote version is newer
+            if( downloadImage(image, webClient) )
+            {
+                syncManager.getSyncState().addStats(1, 0, 0);
+            }
+            else
+            {
+                syncManager.getSyncState().addStats(0, 0, 1);
+                syncManager.updateProgress( "Download error. Aborting." );
+                break;
+            }
         }
 
         // Now clean up any images that have been marked for deletion.
@@ -365,6 +383,9 @@ public class AlbumSync
         return result;
     }
 
+    // Given a local folder, enumerate the files within it and then
+    // set the folder last-modified date to the date-taken of the
+    // most recent photo
     private void updateFolderTimeStamp(File localFolder) {
 
         long maxDate = 0;
@@ -389,7 +410,7 @@ public class AlbumSync
     }
 
     // TODO: What to do about dupe albums with the same name, possibly containing different pics?
-    private void downloadImage( ImageSync image, PicasawebClient webClient ) {
+    private boolean downloadImage( ImageSync image, PicasawebClient webClient ) {
         try {
             PhotoEntry photo = image.getRemotePhoto();
             File saveLocation = image.getLocalFile();
@@ -400,9 +421,13 @@ public class AlbumSync
                 updateFolderTimeStamp( localFolder );
             }
 
+            return true;
+
         } catch (Exception ex) {
 
             log.error("Exception reading local save location...", ex);
         }
+
+        return false;
     }
 }

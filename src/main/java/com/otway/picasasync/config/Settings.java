@@ -19,7 +19,9 @@ package com.otway.picasasync.config;
 import org.apache.log4j.Logger;
 
 import javax.swing.*;
-import java.io.File;
+import java.io.*;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.InvalidPreferencesFormatException;
 import java.util.prefs.Preferences;
 
 /**
@@ -145,8 +147,8 @@ public class Settings {
         preferences.put( UPLOAD_CHANGED, uploadChanged.toString());
         preferences.put( UPLOAD_NEW, uploadNew.toString());
         preferences.put( AUTOBACKUP_DOWNLOAD, autoBackupDownload.toString() );
-        preferences.put( AUTOBACKUP_UPLOAD, autoBackupUpload.toString() );
-        preferences.put( DELETE_TAGGED, deleteTaggedFiles.toString() );
+        preferences.put(AUTOBACKUP_UPLOAD, autoBackupUpload.toString());
+        preferences.put(DELETE_TAGGED, deleteTaggedFiles.toString());
 
         if( getRefreshToken() != null )
             preferences.put( REFRESH_TOKEN, getRefreshToken() );
@@ -154,6 +156,58 @@ public class Settings {
             preferences.remove( REFRESH_TOKEN );
 
         log.info( "Settings saved successfully.");
+    }
+
+    public void exportSettings() throws IOException
+    {
+        File saveLocation = new File( photoRootFolder, "picasasync_settings.xml");
+        OutputStream os = new FileOutputStream( saveLocation );
+
+        try
+        {
+            preferences.exportSubtree(os);
+
+            log.info( "Saved settings to " + saveLocation );
+
+        }
+        catch (BackingStoreException e)
+        {
+            log.error("Invalid settings file: " + saveLocation, e);
+        }
+        finally
+        {
+            os.close();
+        }
+    }
+
+
+
+    public void importSettings(String headlessSettings) throws IOException
+    {
+        File saveLocation = new File( headlessSettings );
+        InputStream is = null;
+        try
+        {
+            is = new FileInputStream( saveLocation );
+
+            preferences.importPreferences(is);
+
+            log.info( "Loaded settings from " + saveLocation );
+
+        }
+        catch (FileNotFoundException e)
+        {
+            log.error("Settings file did not exist: " + saveLocation, e);
+        }
+        catch (InvalidPreferencesFormatException e)
+        {
+            log.error("Invalid settings file: " + saveLocation, e);
+        }
+        finally
+        {
+            if( is != null )
+                is.close();
+        }
     }
 }
 
