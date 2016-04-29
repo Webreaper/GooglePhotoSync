@@ -55,9 +55,9 @@ public class SyncManager {
     private static final String AUTOBACKUP_NAME = "Auto-Backup";
     private static final Logger log = Logger.getLogger(SyncManager.class);
     private final Settings settings;
-    private final GoogleOAuth auth = new GoogleOAuth();
-    private final SyncState syncState = new SyncState();
-    private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private final GoogleOAuth auth;
+    private final SyncState syncState;
+    private final ExecutorService executor;
     private final Object lock = new Object();
     private volatile boolean quit = false;
     private PicasawebClient webClient ;
@@ -66,7 +66,21 @@ public class SyncManager {
 
     public void updateProgress( String msg ){ syncState.setStatus(msg); }
     public SyncState getSyncState() { return syncState; }
-    public SyncManager( Settings settings ) { this.settings = settings; }
+
+    public SyncManager( Settings settings ) {
+        this.settings = settings;
+
+        log.info("Initialising Thread Pool");
+        executor = Executors.newFixedThreadPool(1);
+
+        log.info("Initialising SyncState");
+        syncState = new SyncState();
+
+        log.info("Initialising OAuth");
+        auth = new GoogleOAuth();
+
+        log.info("SyncManager initialised successfully.");
+    }
 
     public void shutDown() {
         log.warn("Shutting down background sync thread.");
@@ -85,12 +99,13 @@ public class SyncManager {
                 while (! quit ) {
 
                     try {
-                        synchronized ( lock ){
-
-                            lock.wait( SYNC_FREQUENCY_MINS * 1000 * 60 );
-                        }
 
                         BeginCompleteSync();
+
+                        synchronized (lock)
+                        {
+                            lock.wait(SYNC_FREQUENCY_MINS * 1000 * 60);
+                        }
                     }
                     catch( Exception ex )
                     {

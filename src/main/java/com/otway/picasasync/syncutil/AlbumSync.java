@@ -27,6 +27,7 @@ import com.otway.picasasync.metadata.UniquePhoto;
 import com.otway.picasasync.picasaini.PicasaIniParser;
 import com.otway.picasasync.utils.FileUtilities;
 import com.otway.picasasync.webclient.PicasawebClient;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -147,7 +148,6 @@ public class AlbumSync
             }
             else
                 syncManager.getSyncState().addStats(0, 0, 1);
-
 
             if (syncManager.getSyncState().getIsCancelled())
                 break;
@@ -274,6 +274,12 @@ public class AlbumSync
         for( PhotoEntry photo : photos )
         {
             String imageName = photo.getTitle().getPlainText().toLowerCase();
+
+            if( FilenameUtils.getExtension( imageName ).toLowerCase().equals(".mov") )
+            {
+                log.info( "Skipping file " + imageName + " with .mov file extension.");
+                continue;
+            }
 
             List<PhotoEntry> photoList = null;
 

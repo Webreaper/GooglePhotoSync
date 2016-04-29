@@ -252,56 +252,50 @@ public class PicasawebClient {
     public boolean uploadImageToAlbum(File imageFile, PhotoEntry remotePhoto, AlbumEntry albumEntry, String localMd5CheckSum ) throws IOException, ServiceException {
 
         boolean success = false;
-        int retries = 0;
         boolean newPhoto = false;
         String albumName = albumEntry.getTitle().getPlainText();
         PhotoEntry myPhoto = remotePhoto;
 
-        while( retries++ < 3 )
+        if (myPhoto == null)
         {
-            if (myPhoto == null)
-            {
-                newPhoto = true;
-                log.info("Uploading new image to album " + albumName + ": " + imageFile);
+            newPhoto = true;
+            log.info("Uploading new image to album " + albumName + ": " + imageFile);
 
-                myPhoto = new PhotoEntry();
-            } else
-            {
-                log.info("Uploading updated image in album " + albumName + ": " + imageFile);
-                List<MediaContent> media = myPhoto.getMediaContents();
-                media.remove(0);
-            }
-
-
-            try
-            {
-                MediaFileSource myMedia = new MediaFileSource(imageFile, "image/jpeg");
-                myPhoto.setMediaSource(myMedia);
-                myPhoto.setChecksum(localMd5CheckSum);
-                myPhoto.setClient(SYNC_CLIENT_NAME);
-
-                if (newPhoto)
-                {
-                    myPhoto.setTitle(new PlainTextConstruct(imageFile.getName()));
-                    myPhoto = insert(albumEntry, myPhoto);
-                    success = true;
-                } else
-                {
-                    myPhoto = myPhoto.updateMedia(true);
-                    success = true;
-                }
-            } catch (Exception ex)
-            {
-                log.error("Unable to add media: " + imageFile + ": " + ex);
-            }
-
-            setUpdatedDate(albumEntry, myPhoto, imageFile);
-
-            if( success )
-                break;
-
-            log.warn(" Attempting to upload - retry " + retries );
+            myPhoto = new PhotoEntry();
         }
+        else
+        {
+            log.info("Uploading updated image in album " + albumName + ": " + imageFile);
+            List<MediaContent> media = myPhoto.getMediaContents();
+            media.remove(0);
+        }
+
+        try
+        {
+            MediaFileSource myMedia = new MediaFileSource(imageFile, "image/jpeg");
+            myPhoto.setMediaSource(myMedia);
+            myPhoto.setChecksum(localMd5CheckSum);
+            myPhoto.setClient(SYNC_CLIENT_NAME);
+
+            if (newPhoto)
+            {
+                myPhoto.setTitle(new PlainTextConstruct(imageFile.getName()));
+                myPhoto = insert(albumEntry, myPhoto);
+                success = true;
+            }
+            else
+            {
+                myPhoto = myPhoto.updateMedia(true);
+                success = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            log.error("Unable to add media: " + imageFile + ": " + ex);
+        }
+
+        if( success )
+            setUpdatedDate(albumEntry, myPhoto, imageFile);
 
         return success;
     }
