@@ -29,6 +29,21 @@ The first time you run it you'll need to pick the root folder of your albums, an
 
 If you want to skip certain albums from the sync, put a file called 'exclude.txt' in the root folder to be synced. Any album names matching entries in the file will be skipped.
 
+### Running Headless
+
+If you want to run this in a headless, non-GUI mode on a platform without JavaFX, you can do this by doing the following:
+
+1. Run PicasawebSync on your Mac, and authenticate against Picasa/Google Photos
+2. Use the 'Export settings' option, which will save a picasasync_settings.xml file in your photos folder
+3. Download the PicasawebSync-headless.zip from the Github releases
+4. Run the headless app, passing in the settings file which has the auth key and sync settings.
+
+An example command-line for the headless app is:
+
+    java -cp picasawebsync.jar:* com.otway.picasasync.Main.Main -settings=picasasync_settings.xml
+
+Note that you should be cautious with the settings file, as the Auth key could allow somebody to access your Google Photos account. If you think it has been compromised, you should clear the token via the Google Account app settings screen.
+
 ### Disclaimer
 
 I accept no liability for any data loss or corruption caused by the use of this application. Your use of this app is entirely at your own risk - please ensure that you have adequate backups before you use this software.
