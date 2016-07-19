@@ -1,20 +1,20 @@
 # PicasawebSync
-## Two-way sync client for Google Picasa, for OSX.
+## Two-way sync client for Google Photos, for OSX.
 
 ### What does it do?
 
-I found it annoying that the Google Picasa application doesn't just sync all my photos with the cloud - I have to manually download cloud albums to my Mac, and set the 'sync' flag on each album. If I forget, the albums won't be backed up to my Picasaweb account. I really want a background sync process which just silently and efficiently syncs photos up to the cloud and down to the Mac as they're modified or updated.
+I found it annoying that the Google Picasa application doesn't just sync all my photos with the Google Photos cloud - I have to manually download cloud albums to my Mac, and set the 'sync' flag on each album. If I forget, the albums won't be backed up to my Google Photos account. This, and the fact that Picasa is now unsupported, means that I really want a separate, seamless background sync process which just silently and efficiently syncs photos up to the cloud and down to the Mac as they're modified or updated. 
 
 ### How does it work?
 
 If you've used the Google Drive application on OSX, you'll be familiar with this - it puts an icon in the menu toolbar, and works in the background synchronising your pictures. 
 
-The first time you run it you'll need to pick the root folder of your albums, and log into Picasa (the app uses OAuth, so 2-Factor auth is supported). You can configure the behaviour (uploads only, downloads only, and whether to sync new, changed or all files, and whether to include Auto Backup albums) and then leave it running in the background. 
+The first time you run it you'll need to pick the root folder of your albums, and log into Google Photos (the app uses OAuth, so 2-Factor auth is supported). You can configure the behaviour (uploads only, downloads only, and whether to sync new, changed or all files, and whether to include Auto Backup albums) and then leave it running in the background. 
 
 ### Features
 
-- Background Sync of your local photos to Picasaweb
-- OAuth for Picasaweb login, including support for 2-Factor Auth
+- Background Sync of your local photos to Google Photos
+- OAuth for Google Photos login, including support for 2-Factor Auth
 - Sync configuration Options:
 - Download New files
 - Download Changed files
@@ -33,7 +33,7 @@ If you want to skip certain albums from the sync, put a file called 'exclude.txt
 
 If you want to run this in a headless, non-GUI mode on a platform without JavaFX, you can do this by doing the following:
 
-1. Run PicasawebSync on your Mac, and authenticate against Picasa/Google Photos
+1. Run PicasawebSync on your Mac, and authenticate against Google Photos
 2. Use the 'Export settings' option, which will save a picasasync_settings.xml file in your photos folder
 3. Download the PicasawebSync-headless.zip from the Github releases
 4. Run the headless app, passing in the settings file which has the auth key and sync settings.
@@ -49,4 +49,4 @@ Note that you should be cautious with the settings file, as the Auth key could a
 I accept no liability for any data loss or corruption caused by the use of this application. Your use of this app is entirely at your own risk - please ensure that you have adequate backups before you use this software.
 
 
-Software (C) Copyright 2015 Mark Otway
+Software (C) Copyright 2015-2016 Mark Otway
